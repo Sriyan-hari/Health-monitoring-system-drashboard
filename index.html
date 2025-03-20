@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IoT Health Monitoring Dashboard</title>
+    <style>
+        body, html {
+            font-family: 'Arial', sans-serif;
+            background-color: #1e1e2f;
+            color: #d1d1e9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 450px;
+            width: 100%;
+            padding: 40px;
+            background-color: #28293e;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+            border-radius: 12px;
+            text-align: center;
+            animation: fadeIn 0.8s ease;
+        }
+
+        h1 {
+            font-size: 26px;
+            color: #69a8f1;
+            margin-bottom: 25px;
+            font-weight: bold;
+        }
+
+        .sensor-data {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+
+        .sensor-data p {
+            margin: 12px 0;
+            color: #a1b5d8;
+        }
+
+        .sensor-data span {
+            font-weight: bold;
+            color: #69a8f1;
+        }
+
+        .control-buttons, .auth-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        button {
+            font-size: 16px;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: transform 0.3s;
+            color: #fff;
+        }
+
+        .on-button {
+            background-color: #69a8f1;
+        }
+
+        .on-button:hover {
+            background-color: #5a91d3;
+        }
+
+        .off-button {
+            background-color: #ff6b6b;
+        }
+
+        .off-button:hover {
+            background-color: #e05a5a;
+        }
+
+        .login-button, .signup-button {
+            background-color: #4caf50;
+        }
+
+        .login-button:hover, .signup-button:hover {
+            background-color: #45a049;
+        }
+
+        .logout-button {
+            background-color: #ff9800;
+        }
+
+        .logout-button:hover {
+            background-color: #fb8c00;
+        }
+
+        .welcome-message {
+            font-size: 20px;
+            color: #69a8f1;
+            margin-bottom: 20px;
+        }
+
+        input {
+            width: 90%;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .health-advisory {
+            color: #ff6b6b;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>IoT Health Monitoring Dashboard</h1>
+
+        <div id="welcome-section" class="welcome-message" style="display: none;">
+            Welcome, <span id="username-display">User</span>!
+        </div>
+
+        <div id="auth-section">
+            <div id="login-form" style="display: none;">
+                <input type="text" id="login-username" placeholder="Username" required>
+                <input type="password" id="login-password" placeholder="Password" required>
+                <button class="login-button" onclick="login()">Log In</button>
+                <p style="color: #a1b5d8; cursor: pointer;" onclick="showSignupForm()">Don't have an account? Sign Up</p>
+            </div>
+
+            <div id="signup-form">
+                <input type="text" id="signup-username" placeholder="Create Username" required>
+                <input type="password" id="signup-password" placeholder="Create Password" required>
+                <button class="signup-button" onclick="signup()">Sign Up</button>
+                <p style="color: #a1b5d8; cursor: pointer;" onclick="showLoginForm()">Already have an account? Log In</p>
+            </div>
+        </div>
+
+        <div id="dashboard-section" style="display: none;">
+            <div class="sensor-data">
+                <p>Temperature: <span id="temperature">--</span> °C</p>
+                <p>Pulse Rate: <span id="pulse">--</span> BPM</p>
+            </div>
+
+            <div class="control-buttons">
+                <button class="on-button" onclick="controlDevice('ON')">Turn ON Device</button>
+                <button class="off-button" onclick="controlDevice('OFF')">Turn OFF Device</button>
+            </div>
+
+            <button class="logout-button" onclick="logout()">Log Out</button>
+        </div>
+
+        <div class="health-advisory" id="health-advisory" style="display: none;">
+            ⚠ Health Alert: Please consult a doctor.
+        </div>
+    </div>
+
+    <script>
+        function checkLogin() {
+            const isLoggedIn = localStorage.getItem('loggedIn') === "true";
+            const username = localStorage.getItem('username');
+
+            if (isLoggedIn && username) {
+                document.getElementById('username-display').innerText = username;
+                document.getElementById('auth-section').style.display = 'none';
+                document.getElementById('welcome-section').style.display = 'block';
+                document.getElementById('dashboard-section').style.display = 'block';
+
+                fetchSensorData();
+            } else {
+                document.getElementById('auth-section').style.display = 'block';
+                document.getElementById('welcome-section').style.display = 'none';
+                document.getElementById('dashboard-section').style.display = 'none';
+            }
+        }
+
+        function signup() {
+            const username = document.getElementById('signup-username').value.trim();
+            const password = document.getElementById('signup-password').value.trim();
+
+            if (!username || !password) {
+                alert("Please enter both username and password to sign up.");
+                return;
+            }
+
+            if (localStorage.getItem('username')) {
+                alert("An account already exists. Please log in instead.");
+                return;
+            }
+
+            localStorage.setItem('username', username);
+            localStorage.setItem('password', password);
+            localStorage.setItem('loggedIn', "true");
+
+            document.getElementById('signup-username').value = '';
+            document.getElementById('signup-password').value = '';
+
+            alert("Signup successful!");
+            checkLogin();
+        }
+
+        function login() {
+            const username = document.getElementById('login-username').value.trim();
+            const password = document.getElementById('login-password').value.trim();
+            const storedUsername = localStorage.getItem('username');
+            const storedPassword = localStorage.getItem('password');
+
+            if (username === storedUsername && password === storedPassword) {
+                localStorage.setItem('loggedIn', "true");
+                alert("Login successful!");
+                checkLogin();
+            } else {
+                alert("Invalid username or password.");
+            }
+        }
+
+        function logout() {
+            localStorage.setItem('loggedIn', "false");
+            alert("Logged out successfully.");
+            checkLogin();
+        }
+
+        function showSignupForm() {
+            document.getElementById('signup-form').style.display = 'block';
+            document.getElementById('login-form').style.display = 'none';
+        }
+
+        function showLoginForm() {
+            document.getElementById('signup-form').style.display = 'none';
+            document.getElementById('login-form').style.display = 'block';
+        }
+
+        function fetchSensorData() {
+            fetch('get-sensor-data.php')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('temperature').innerText = data.temperature;
+                    document.getElementById('pulse').innerText = data.pulse;
+                    checkHealthAdvisory(data.temperature, data.pulse);
+                });
+        }
+
+        function controlDevice(action) {
+            fetch('control-device.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ action: action })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+            });
+        }
+
+        function checkHealthAdvisory(temperature, pulse) {
+            const healthAdvisory = document.getElementById('health-advisory');
+            if (temperature > 37 || pulse < 60 || pulse > 100) {
+                healthAdvisory.style.display = 'block';
+            } else {
+               
+                healthAdvisory.style.display = 'none';
+            }
+        }
+
+        // Initialize the application
+        checkLogin();
+    </script>
+</body>
+</html>
